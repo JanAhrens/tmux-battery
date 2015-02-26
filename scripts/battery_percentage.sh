@@ -9,9 +9,8 @@ print_battery_percentage() {
 	if command_exists "pmset"; then
 		pmset -g batt | awk 'NR==2 { gsub(/;/,""); print $2 }'
 	elif command_exists "upower"; then
-		for battery in $(upower -e | grep battery); do
-			upower -i $battery | grep percentage | awk '{print $2}'
-		done | xargs echo
+		value=$(average $(upower_percentage))
+		echo "${value}%"
 	fi
 }
 

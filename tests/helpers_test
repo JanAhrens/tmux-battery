@@ -1,0 +1,57 @@
+#!/bin/bash
+
+source ./helpers/assert.sh
+source ./helpers/test_runner.sh
+
+# --- show_time ---
+
+test_show_time_no_seconds() {
+    actual=$(show_time 23)
+    assert_equal "00:00" "${actual}"
+}
+
+test_show_time_minutes() {
+    actual=$(show_time 61)
+    assert_equal "00:01" "${actual}"
+}
+
+test_show_time_minutes_double_digit() {
+    actual=$(show_time 1260)
+    assert_equal "00:21" "${actual}"
+}
+
+test_show_time_hours_and_minutes() {
+    actual=$(show_time 3900)
+    assert_equal "01:05" "${actual}"
+}
+
+# --- average ----
+
+test_average_one_value() {
+    actual=$(average 100)
+    assert_equal "100" "${actual}"
+}
+
+test_average_three_values() {
+    input=$(printf "23\n52\n24\n")
+    actual=$(average $input)
+    assert_equal "33" "${actual}"
+}
+
+test_average_odd_average_is_even() {
+    input=$(printf "3\n2\n")
+    actual=$(average $input)
+    assert_equal "2" "${actual}"
+}
+
+source ../scripts/helpers.sh
+
+run_tests				\
+    test_show_time_no_seconds		\
+    test_show_time_minutes		\
+    test_show_time_minutes_double_digit	\
+    test_show_time_hours_and_minutes	\
+					\
+    test_average_one_value		\
+    test_average_three_values		\
+    test_average_odd_average_is_even
