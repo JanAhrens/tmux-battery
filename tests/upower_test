@@ -4,73 +4,101 @@ source ./helpers/assert.sh
 source ./helpers/test_runner.sh
 source ../scripts/helpers.sh
 
-# upower mock
-upower_mock() {
-    echo '/org/freedesktop/UPower/devices/line_power_AC'
-    echo '/org/freedesktop/UPower/devices/battery_BAT0'
-    echo '/org/freedesktop/UPower/devices/battery_BAT1'
+upower_mock_one_battery() {
+	echo '/org/freedesktop/UPower/devices/line_power_AC'
+	echo '/org/freedesktop/UPower/devices/battery_BAT0'
+}
+
+upower_mock_two_batteries() {
+	echo '/org/freedesktop/UPower/devices/line_power_AC'
+	echo '/org/freedesktop/UPower/devices/battery_BAT0'
+	echo '/org/freedesktop/UPower/devices/battery_BAT1'
 }
 
 dbus_time_mock() {
-    time=0
-    for part in $@; do
-				if [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT0" ]]; then
-						time=234
-				elif [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT1" ]]; then
-						time=1232
-				fi
-    done
+	time=0
+	for part in $@; do
+		if [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT0" ]]; then
+			time=234
+		elif [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT1" ]]; then
+			time=1232
+		fi
+	done
 
-    if [[ "${remaining}" = 0 ]]; then
-				echo "Wrong dbus-send mock invocation"
-				return 1
-    fi
+	if [[ "${remaining}" = 0 ]]; then
+		echo "Wrong dbus-send mock invocation"
+		return 1
+	fi
 
-    echo "   variant       int64 ${time}"
+	echo "   variant       int64 ${time}"
 }
 
 dbus_percentage_mock() {
-    percentage=0
-    for part in $@; do
-				if [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT0" ]]; then
-						percentage=89
-				elif [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT1" ]]; then
-						percentage=99
-				fi
-    done
+	percentage=0
+	for part in $@; do
+		if [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT0" ]]; then
+			percentage=89
+		elif [[ "${part}" = "/org/freedesktop/UPower/devices/battery_BAT1" ]]; then
+			percentage=99
+		fi
+	done
 
-    if [[ "${remaining}" = 0 ]]; then
-				echo "Wrong dbus-send mock invocation"
-				return 1
-    fi
+	if [[ "${remaining}" = 0 ]]; then
+		echo "Wrong dbus-send mock invocation"
+		return 1
+	fi
 
-    echo "   variant       double ${percentage}"
+	echo "   variant       double ${percentage}"
 }
 
-test_upower_time_returns_times_of_all_batteries() {
-    upower() {
-        upower_mock $@
-    }
-    dbus-send() {
-    	dbus_time_mock $@
-    }
-    actual=$(upower_time)
-    expected=$(printf "234\n1232")
-    assert_equal "${expected}" "${actual}"
+test_upower_time_to_empty_returns_times_of_all_batteries() {
+	upower() {
+		upower_mock_two_batteries $@
+	}
+	dbus-send() {
+		dbus_time_mock $@
+	}
+	actual=$(upower_time_to_empty)
+	expected=$(printf "234\n1232")
+	assert_equal "${expected}" "${actual}"
+}
+
+test_upower_time_to_empty_works_with_one_battery() {
+	upower() {
+		upower_mock_one_battery $@
+	}
+	dbus-send() {
+		dbus_time_mock $@
+	}
+	actual=$(upower_time_to_empty)
+	assert_equal "234" "${actual}"
 }
 
 test_upower_percentage_returns_percentage_of_all_batteries() {
-    upower() {
-        upower_mock $@
-    }
-    dbus-send() {
-    		dbus_percentage_mock $@
-    }
-    actual=$(upower_percentage)
-    expected=$(printf "89\n99")
-    assert_equal "${expected}" "${actual}"
+	upower() {
+		upower_mock_two_batteries $@
+	}
+	dbus-send() {
+		dbus_percentage_mock $@
+	}
+	actual=$(upower_percentage)
+	expected=$(printf "89\n99")
+	assert_equal "${expected}" "${actual}"
+}
+
+test_upower_percentage_works_with_one_battery() {
+	upower() {
+		upower_mock_one_battery $@
+	}
+	dbus-send() {
+		dbus_percentage_mock $@
+	}
+	actual=$(upower_percentage)
+	assert_equal "89" "${actual}"
 }
 
 run_tests \
-		test_upower_time_returns_times_of_all_batteries \
-		test_upower_percentage_returns_percentage_of_all_batteries
+	test_upower_time_to_empty_returns_times_of_all_batteries \
+	test_upower_time_to_empty_works_with_one_battery \
+	test_upower_percentage_returns_percentage_of_all_batteries \
+	test_upower_percentage_works_with_one_battery
